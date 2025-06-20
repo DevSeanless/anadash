@@ -1,6 +1,3 @@
-<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" /> -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <div class="container mt-4">
     <!-- Header -->
     <div class="row mb-4">
@@ -67,10 +64,12 @@
 </div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
     const chartCtx = document.getElementById('lineChart').getContext('2d');
 
-    // Example data structure, simulating data grouped for different filters and sub-filters
     const fullData = {
         yearly: {
             Jan: {
@@ -199,10 +198,9 @@
         }
     };
 
-    const mainFilter = document.getElementById('mainFilter');
-    const subFilter = document.getElementById('subFilter');
+    const $mainFilter = $('#mainFilter');
+    const $subFilter = $('#subFilter');
 
-    // Initialize chart
     const lineChart = new Chart(chartCtx, {
         type: 'line',
         data: {
@@ -241,57 +239,49 @@
         }
     });
 
-    // Helper: Populate subFilter options based on mainFilter choice
     function populateSubFilterOptions(filterType) {
-        subFilter.innerHTML = ''; // Clear existing options
-        let options = [];
+        $subFilter.empty();
 
-        if (filterType === 'yearly') {
-            options = Object.keys(fullData.yearly);
-        } else if (filterType === 'monthly') {
-            options = Object.keys(fullData.monthly);
-        } else if (filterType === 'weekly') {
-            options = Object.keys(fullData.weekly);
-        }
-
+        let options = Object.keys(fullData[filterType] || {});
         options.forEach(opt => {
-            const optionEl = document.createElement('option');
-            optionEl.value = opt;
-            optionEl.textContent = opt;
-            subFilter.appendChild(optionEl);
+            $subFilter.append($('<option>', {
+                value: opt,
+                text: opt
+            }));
         });
     }
 
-    // Update chart and KPIs based on selected filters
     function updateDashboard() {
-        const mainVal = mainFilter.value;
-        const subVal = subFilter.value;
+        const mainVal = $mainFilter.val();
+        const subVal = $subFilter.val();
+        const dataset = fullData[mainVal]?.[subVal];
 
-        const dataset = fullData[mainVal][subVal];
         if (!dataset) return;
 
         lineChart.data.labels = dataset.labels;
         lineChart.data.datasets[0].data = dataset.data;
         lineChart.update();
 
-        // Update KPI cards with correct data
-        document.getElementById('salesCount').textContent = dataset.sales.toLocaleString(); // Total Sales
-        document.getElementById('revenueCount').textContent = dataset.orders.toLocaleString(); // Number of Transactions
+        $('#salesCount').text(dataset.sales.toLocaleString());
+        $('#revenueCount').text(dataset.orders.toLocaleString());
+
         const avgSale = dataset.orders ? dataset.revenue / dataset.orders : 0;
-        document.getElementById('ordersCount').textContent = `$${avgSale.toFixed(2)}`; // Average Sale Per Transaction
+        $('#ordersCount').text(`$${avgSale.toFixed(2)}`);
     }
 
-    // Event listeners
-    mainFilter.addEventListener('change', () => {
-        populateSubFilterOptions(mainFilter.value);
+    // Event bindings
+    $mainFilter.on('change', function() {
+        populateSubFilterOptions($(this).val());
         updateDashboard();
     });
 
-    subFilter.addEventListener('change', () => {
+    $subFilter.on('change', function() {
         updateDashboard();
     });
 
-    // Initialize UI
-    populateSubFilterOptions(mainFilter.value);
-    updateDashboard();
+    // Initial render
+    $(document).ready(function() {
+        populateSubFilterOptions($mainFilter.val());
+        updateDashboard();
+    });
 </script>

@@ -1,6 +1,3 @@
-<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" /> -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-
 <div class="container mt-4">
     <!-- Header -->
     <div class="row mb-4">
@@ -65,7 +62,6 @@
         </div>
     </div>
 </div>
-
 <script>
     const chartCtxInventory = document.getElementById('lineChartInventory').getContext('2d');
 
@@ -197,8 +193,8 @@
         }
     };
 
-    const mainFilterInventory = document.getElementById('mainFilterInventory');
-    const subFilterInventory = document.getElementById('subFilterInventory');
+    const $mainFilterInventory = $('#mainFilterInventory');
+    const $subFilterInventory = $('#subFilterInventory');
 
     const lineChartInventory = new Chart(chartCtxInventory, {
         type: 'line',
@@ -238,58 +234,54 @@
         }
     });
 
-    function populateSubFilterOptions(filterType) {
-        subFilterInventory.innerHTML = '';
-        let options = [];
+    function populateInventorySubFilterOptions(filterType) {
+        $subFilterInventory.empty();
 
-        if (filterType === 'yearly') {
-            options = Object.keys(fullDataInventory.yearly);
-        } else if (filterType === 'monthly') {
-            options = Object.keys(fullDataInventory.monthly);
-        } else if (filterType === 'weekly') {
-            options = Object.keys(fullDataInventory.weekly);
-        }
-
-        options.forEach(opt => {
-            const optionEl = document.createElement('option');
-            optionEl.value = opt;
-            optionEl.textContent = opt;
-            subFilterInventory.appendChild(optionEl);
+        let options = Object.keys(fullDataInventory[filterType] || {});
+        $.each(options, function(index, opt) {
+            $subFilterInventory.append($('<option>', {
+                value: opt,
+                text: opt
+            }));
         });
 
-        return options[0]; // return the first option as default
+        return options[0]; // return first option for default selection
     }
 
-    function updateDashboard() {
-        const mainVal = mainFilterInventory.value;
-        const subVal = subFilterInventory.value;
+    function updateInventoryDashboard() {
+        const mainVal = $mainFilterInventory.val();
+        const subVal = $subFilterInventory.val();
 
-        const dataset = fullDataInventory[mainVal][subVal];
+        const dataset = fullDataInventory[mainVal]?.[subVal];
         if (!dataset) return;
 
+        // Update Chart
         lineChartInventory.data.labels = dataset.labels;
         lineChartInventory.data.datasets[0].data = dataset.data;
         lineChartInventory.update();
 
-        document.getElementById('inventoryCount').textContent = dataset.inventory.toLocaleString();
-        document.getElementById('transactionsCount').textContent = dataset.transactions.toLocaleString();
-        const avgInventory = dataset.transactions ? dataset.cost / dataset.transactions : 0;
-        document.getElementById('avgInventoryCount').textContent = `$${avgInventory.toFixed(2)}`;
+        // Update KPI Cards
+        $('#inventoryCount').text(dataset.inventory.toLocaleString());
+        $('#transactionsCount').text(dataset.transactions.toLocaleString());
+        const avg = dataset.transactions ? dataset.cost / dataset.transactions : 0;
+        $('#avgInventoryCount').text(`$${avg.toFixed(2)}`);
     }
 
     // Event listeners
-    mainFilterInventory.addEventListener('change', () => {
-        const defaultSubInventory = populateSubFilterOptions(mainFilterInventory.value);
-        subFilterInventory.value = defaultSubInventory;
-        updateDashboard();
+    $mainFilterInventory.on('change', function() {
+        const defaultSub = populateInventorySubFilterOptions($(this).val());
+        $subFilterInventory.val(defaultSub);
+        updateInventoryDashboard();
     });
 
-    subFilterInventory.addEventListener('change', () => {
-        updateDashboard();
+    $subFilterInventory.on('change', function() {
+        updateInventoryDashboard();
     });
 
-    // Initial load
-    const defaultSubInventory = populateSubFilterOptions(mainFilterInventory.value);
-    subFilterInventory.value = defaultSubInventory;
-    updateDashboard();
+    // Initial Load
+    $(document).ready(function() {
+        const defaultSub = populateInventorySubFilterOptions($mainFilterInventory.val());
+        $subFilterInventory.val(defaultSub);
+        updateInventoryDashboard();
+    });
 </script>

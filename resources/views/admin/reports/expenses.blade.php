@@ -1,6 +1,3 @@
-<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" /> -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-
 <div class="container mt-4">
     <!-- Header -->
     <div class="row mb-4">
@@ -65,6 +62,8 @@
         </div>
     </div>
 </div>
+
+
 <script>
     const chartCtxExpenses = document.getElementById('lineChartExpense').getContext('2d');
 
@@ -196,8 +195,8 @@
         }
     };
 
-    const mainFilterExpense = document.getElementById('mainFilterExpense');
-    const subFilterExpense = document.getElementById('subFilterExpense');
+    const $mainFilterExp = $('#mainFilterExpense');
+    const $subFilterExp = $('#subFilterExpense');
 
     const lineChartExpense = new Chart(chartCtxExpenses, {
         type: 'line',
@@ -237,58 +236,54 @@
         }
     });
 
-    function populateSubFilterOptions(filterType) {
-        subFilterExpense.innerHTML = '';
-        let options = [];
+    function populateExpenseSubFilter(filterType) {
+        $subFilterExp.empty();
 
-        if (filterType === 'yearly') {
-            options = Object.keys(fullDataExpenses.yearly);
-        } else if (filterType === 'monthly') {
-            options = Object.keys(fullDataExpenses.monthly);
-        } else if (filterType === 'weekly') {
-            options = Object.keys(fullDataExpenses.weekly);
-        }
-
-        options.forEach(opt => {
-            const optionEl = document.createElement('option');
-            optionEl.value = opt;
-            optionEl.textContent = opt;
-            subFilterExpense.appendChild(optionEl);
+        let options = Object.keys(fullDataExpenses[filterType] || {});
+        $.each(options, function(i, opt) {
+            $subFilterExp.append($('<option>', {
+                value: opt,
+                text: opt
+            }));
         });
 
-        return options[0]; // return the first option as default
+        return options[0]; // return the first option for default selection
     }
 
-    function updateDashboard() {
-        const mainVal = mainFilterExpense.value;
-        const subVal = subFilterExpense.value;
+    function updateExpenseDashboard() {
+        const mainVal = $mainFilterExp.val();
+        const subVal = $subFilterExp.val();
 
-        const dataset = fullDataExpenses[mainVal][subVal];
+        const dataset = fullDataExpenses[mainVal]?.[subVal];
         if (!dataset) return;
 
+        // Update chart
         lineChartExpense.data.labels = dataset.labels;
         lineChartExpense.data.datasets[0].data = dataset.data;
         lineChartExpense.update();
 
-        document.getElementById('expensesCount').textContent = dataset.expenses.toLocaleString();
-        document.getElementById('transactionsCount').textContent = dataset.transactions.toLocaleString();
-        const avgExpense = dataset.transactions ? dataset.cost / dataset.transactions : 0;
-        document.getElementById('avgExpenseCount').textContent = `$${avgExpense.toFixed(2)}`;
+        // Update KPIs
+        $('#expensesCount').text(dataset.expenses.toLocaleString());
+        $('#transactionsCount').text(dataset.transactions.toLocaleString());
+        const avg = dataset.transactions ? dataset.cost / dataset.transactions : 0;
+        $('#avgExpenseCount').text(`$${avg.toFixed(2)}`);
     }
 
-    // Event listeners
-    mainFilterExpense.addEventListener('change', () => {
-        const defaultSub = populateSubFilterOptions(mainFilterExpense.value);
-        subFilterExpense.value = defaultSub;
-        updateDashboard();
+    // Bind events
+    $mainFilterExp.on('change', function() {
+        const defaultSub = populateExpenseSubFilter($(this).val());
+        $subFilterExp.val(defaultSub);
+        updateExpenseDashboard();
     });
 
-    subFilterExpense.addEventListener('change', () => {
-        updateDashboard();
+    $subFilterExp.on('change', function() {
+        updateExpenseDashboard();
     });
 
     // Initial load
-    const defaultSub = populateSubFilterOptions(mainFilterExpense.value);
-    subFilterExpense.value = defaultSub;
-    updateDashboard();
+    $(document).ready(function() {
+        const defaultSub = populateExpenseSubFilter($mainFilterExp.val());
+        $subFilterExp.val(defaultSub);
+        updateExpenseDashboard();
+    });
 </script>
